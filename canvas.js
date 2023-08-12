@@ -143,6 +143,10 @@ function init() {
                         b.content = val;
                         b.width = b2.width;
                         b.height = b2.height;
+                        b.x = b2.x;
+                        b.y = b2.y;
+                        b.dx = b2.dx;
+                        b.dy = b2.dy;
                     }
                 }
             }
@@ -160,7 +164,9 @@ function init() {
         window.localStorage[name] = JSON.stringify(boxes);
         window.localStorage[historyKey(name)] = JSON.stringify(history);
         window.localStorage[languageKey(name)] = language();
-        message(`Saved <b>${name}</b> in language <code>${language()}</code>`);
+        if (historyBlock.length > 0) {
+            message(`Saved <b>${name}</b> in language <code>${language()}</code>`);
+        }
     }
 
     function loadBoxes(name) {
