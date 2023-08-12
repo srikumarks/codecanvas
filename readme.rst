@@ -16,29 +16,29 @@ boxes support Scheme syntax.
 How to use
 ----------
 
-1. Click "Save" first. It will reload the page with a query param
-   ``?file=start``. The page's ``file`` query parameter is used to save your
-   canvas. If you already loaded a page with a filename, you don't need to
-   click "Save". You'll also see a ``lang`` parameter. You can change that and
-   reload the page to set the language of the code boxes. [#lang]_
+1. Cmd-Click anywhere on the canvas to create a code box.
 
-2. Cmd-Click anywhere on the canvas to create a code box.
+2. You can drag the code box around by Cmd-dragging its "title" bar.
 
-3. You can drag the code box around by Cmd-dragging its "title" bar.
+3. You can resize the code box using the handle at the bottom right corner.
 
-4. You can resize the code box using the handle at the bottom right corner.
+4. Alt-Click on a code box to delete the box.
 
-5. Alt-Click on a code box to delete the box.
-
-6. Click on a code box to "focus" on it. The box will zoom a bit to make it
+5. Click on a code box to "focus" on it. The box will zoom a bit to make it
    visible, in case you're projecting the canvas on a smaller screen. Click on
    the canvas background to reset the box size to normal.
 
-7. Any time you want to save what you have, click the "Save" button at the top
+6. Any time you want to save what you have, click the "Save" button at the top
    right corner. The canvas will be saved in your ``localStorage``.
 
 Notes
 -----
+
+There are two URL parameters - ``file`` and ``lang``. You can put in a name for
+your canvas into the text box at the top right and click "Save" to store it in
+``localStorage`` under that name. The ``lang`` parameter can be used to set the
+editor language for the code boxes (examples ``scheme``, ``haskell``,
+``javascript``, ``python``).
 
 The "Source" button will combine all the box text into a single file and make
 it available for download. The order in which the code is put together is
