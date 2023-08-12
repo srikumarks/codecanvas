@@ -1,4 +1,5 @@
-#Code canvas
+Code canvas
+===========
 
 "Code canvas" is a tool inspired by a difficulty I encountered when teaching
 implementation-intensive classes. I'd need to go back and forth between
@@ -12,7 +13,8 @@ So this is a tool that lets you put snippets of code on a blank "canvas", move
 them around, jump around etc. while keeping the whole screen in view. The code
 boxes support Scheme syntax.
 
-##How to use
+How to use
+----------
 
 1. Click "Save" first. It will reload the page with a query param
    ``?file=start``. The page's ``file`` query parameter is used to save your
@@ -34,7 +36,8 @@ boxes support Scheme syntax.
 7. Any time you want to save what you have, click the "Save" button at the top
    right corner. The canvas will be saved in your ``localStorage``.
 
-## Notes
+Notes
+-----
 
 The "Export" button will combine all the box text into a single file and make
 it available for download. The order in which the code is put together is
