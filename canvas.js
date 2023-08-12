@@ -16,13 +16,44 @@ function EventResponder(element, eventname, handler) {
     });
 }
 
+function download(data, type, name) {
+    let blob = new Blob(data, {type: type});
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function message(text) {
+    let pop = document.createElement('div');
+    pop.innerHTML = text;
+    pop.style.position = 'absolute';
+    pop.style.right = "5px";
+    pop.style.bottom = "5px";
+    pop.style['box-shadow'] = '3px 3px 5px';
+    document.body.appendChild(pop);
+    setTimeout(5000, function () {
+        document.body.removeChild(pop);
+    });
+}
+
+const fileExtensions = {
+    scheme: '.rkt', haskell: '.hs', c: '.c', cpp: '.cpp', sql: '.sql', 
+    javascript: '.js', typescript: '.ts', python: '.py', julia: '.jl',
+    ruby: '.rb'
+};
 const elem = (id) => { return document.getElementById(id); };
 const copy = (obj) => { return Object.assign({}, obj); };
 const historyKey = (name) => { return name + '.history'; };
 const languageKey = (name) => { return name + '.lang'; };
 const urlfilename = () => {
     let p = new URLSearchParams(window.location.search);
-    return p.get("file") || window.location.hash.substring(1);
+    return (p.get("file") || window.location.hash.substring(1)).trim();
 };
 const filename = () => { 
     return (elem('filename').value.trim().replaceAll(/\s+/g, '') || urlfilename());
@@ -30,6 +61,12 @@ const filename = () => {
 const language = () => {
     let p = new URLSearchParams(window.location.search);
     return p.get("lang") || window.localStorage[languageKey(filename())] || 'scheme';
+};
+const filepath = () => {
+    return filename() + (fileExtensions[language()] || ".txt");
+};
+const redirect = () => {
+    window.location.href = `?file=${filename()}&lang=${language()}`;
 };
 
 function init() {
@@ -74,6 +111,52 @@ function init() {
         requestAnimationFrame(func);
     };
 
+    function save(name) {
+        let historyBlock = [];
+        for (let k in boxes) {
+            let b = boxes[k];
+            if (b) {
+                let el = elem(b.elementId);
+                if (el) {
+                    let latest = getLatest(b.id);
+                    let val = el.editor.getValue();
+                    if (val !== latest.content
+                        || b.width !== latest.width
+                        || b.height !== latest.height
+                        || b.x !== latest.x
+                        || b.y !== latest.y
+                        || b.dx !== latest.dx
+                        || b.dy !== latest.dy
+                    ) {
+                        let b2 = copy(latest);
+                        b2.version++;
+                        b2.content = val;
+                        b2.width = el.style.width;
+                        b2.height = el.style.height;
+                        historyBlock.push(b2);
+                        b.version = b2.version;
+                        b.content = val;
+                        b.width = b2.width;
+                        b.height = b2.height;
+                    }
+                }
+            }
+        }
+
+        if (historyBlock.length > 0) {
+            history.push({type: 'modified', items: historyBlock});
+        }
+
+        if (!name) {
+            window.location.href = "?file=start&lang=scheme";
+            return;
+        }
+
+        window.localStorage[name] = JSON.stringify(boxes);
+        window.localStorage[historyKey(name)] = JSON.stringify(history);
+        window.localStorage[languageKey(name)] = language();
+    }
+
     function loadBoxes(name) {
         if (name in window.localStorage) {
             let str = window.localStorage[name];
@@ -98,53 +181,6 @@ function init() {
                 id = Math.max(h.items[j].id + 1, id);
             }
         }
-
-        window.SAVE = function (name) {
-            let historyBlock = [];
-            for (let k in boxes) {
-                let b = boxes[k];
-                if (b) {
-                    let el = elem(b.elementId);
-                    if (el) {
-                        let latest = getLatest(b.id);
-                        let val = el.editor.getValue();
-                        if (val !== latest.content
-                            || b.width !== latest.width
-                            || b.height !== latest.height
-                            || b.x !== latest.x
-                            || b.y !== latest.y
-                            || b.dx !== latest.dx
-                            || b.dy !== latest.dy
-                        ) {
-                            let b2 = copy(latest);
-                            b2.version++;
-                            b2.content = val;
-                            b2.width = el.style.width;
-                            b2.height = el.style.height;
-                            historyBlock.push(b2);
-                            b.version = b2.version;
-                            b.content = val;
-                            b.width = b2.width;
-                            b.height = b2.height;
-                        }
-                    }
-                }
-            }
-
-            if (historyBlock.length > 0) {
-                history.push({type: 'modified', items: historyBlock});
-            }
-
-            if (!name) {
-                window.location.href = "?file=start&lang=scheme";
-                return;
-            }
-
-            window.localStorage[name] = JSON.stringify(boxes);
-            window.localStorage[historyKey(name)] = JSON.stringify(history);
-            window.localStorage[languageKey(name)] = language();
-            window.location.href = `?file=${name}&lang=${language()}`;
-        };
     }
 
     function MkEnlargeBehaviour(canvas) {
@@ -283,15 +319,19 @@ function init() {
 
     function SaveBehaviour(div) {
         return EventResponder(div, 'click', function onsave(event) {
-            window.SAVE(filename());
-            alert("Saved " + filename());
+            save(filename());
+            if (urlfilename().length > 0) {
+                redirect();
+            }
+            message(`Saved ${filename()} in language ${language()}`);
         });
     }
 
-    function ExportBehaviour(button) {
+    function SourceCodeBehaviour(button) {
         // TODO: Change this to sort definitions in dependency order.
         // Currently it sorts top-down-first followed by left-right.
-        return EventResponder(button, 'click', function onexport(event) {
+        return EventResponder(button, 'click', function onsource(event) {
+            save(filename());
             let boxvals = [...Object.values(boxes)];
             boxvals.sort(function (a, b) {
                 return (a.y + a.dy < b.y + b.dy) && (a.x + a.dx < b.x + b.dx);
@@ -301,16 +341,54 @@ function init() {
                 content.push(b.content);
                 content.push("\n\n");
             }
-            let blob = new Blob(content, {type:"text/plain"});
-            let url = URL.createObjectURL(blob);
-            let a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = filename() + ".rkt";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            download(content, "text/plain", filepath());
+        });
+    }
+
+    function ExportBehaviour(button) {
+        return EventResponder(button, 'click', function onexport(event) {
+            save(filename());
+            let data = {};
+            data.date = (new Date()).toISOString();
+            data.filename = filename();
+            data.lang = window.localStorage[languageKey(filename())];
+            data.boxes = JSON.parse(window.localStorage[filename()]);
+            data.history = JSON.parse(window.localStorage[historyKey(filename())]);
+            let dataStr = JSON.stringify(data);
+            download([dataStr], 'application/json', filename() + ".json");
+        });
+    }
+
+    function DropFileBehaviour(canvas) {
+        function ondrop(event) {
+            event.preventDefault();
+            console.log(event.dataTransfer);
+            let files = [...event.dataTransfer.files];
+            if (files.length > 0) {
+                let file = files[0];
+                let fr = new FileReader();
+                fr.addEventListener('load', function () {
+                    let json = JSON.parse(fr.result);
+                    window.localStorage[json.filename] = JSON.stringify(json.boxes);
+                    window.localStorage[json.filename + ".history"] = JSON.stringify(json.history);
+                    window.localStorage[json.filename + ".lang"] = json.lang;
+                    elem('filename').value = json.filename;
+                    redirect();
+                });
+                fr.readAsText(file);
+                            }
+        }
+        function ondragover(event) {
+            event.preventDefault();
+        }
+        return Behaviour(function add() {
+            canvas.addEventListener('drop', ondrop);
+            canvas.addEventListener('dragover', ondragover);
+            return this;
+        }, function remove() {
+            canvas.removeEventListener('drop', ondrop);
+            canvas.removeEventListener('dragover', ondragover);
+            return this;
         });
     }
 
@@ -367,7 +445,9 @@ function init() {
 
     let createbox_behaviour = CreateBoxBehaviour(elem('canvas')).add();
     let save_behaviour = SaveBehaviour(elem('save')).add();
+    let source_behaviour = SourceCodeBehaviour(elem('source')).add();
     let export_behaviour = ExportBehaviour(elem('export')).add();
+    let dropfile_behaviour = DropFileBehaviour(elem('canvas')).add();
 
     loadBoxes(filename());
 }

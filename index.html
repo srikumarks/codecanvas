@@ -24,7 +24,11 @@
                 position: absolute;
                 right: 0px;
                 top: 0px;
-                z-index: 1000
+                z-index: 1000;
+                margin: 3px;
+            }
+            #filename {
+                width: 5em;
             }
         </style>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.24.0/ace.min.js"></script>
@@ -32,8 +36,9 @@
     <body>
         <div class="button_panel">
             <a href="readme.rst">Help</a>
-            <input type="text" id="filename" style="width: 10em" value="start"/>
+            <input type="text" id="filename" value="start"/>
             <button id="save">Save</button>
+            <button id="source">Source</button>
             <button id="export">Export</button>
         </div>
         <div class="canvas" id="canvas">

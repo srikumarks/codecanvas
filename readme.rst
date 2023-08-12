@@ -40,12 +40,17 @@ How to use
 Notes
 -----
 
-The "Export" button will combine all the box text into a single file and make
+The "Source" button will combine all the box text into a single file and make
 it available for download. The order in which the code is put together is
 top-down first followed by left-right. While eventually we could integrate a
-parser and sort the boxes by dependency order before exporting, you may
-initially want to place definitions closer to top-left and things that use
+parser and sort the boxes by dependency order before building the source, you
+may initially want to place definitions closer to top-left and things that use
 these definitions either below or to the right.
+
+The "Export" button will make a JSON object of all the information associated
+with the current canvas and provide a file for download. You can later on take
+this file and drop it onto the canvas to load it. This offers a way to transport
+the canvas code to other computers, say, via email as an attachment.
 
 .. [#lang] At some point, it might make sense to have per-box language support,
    but I don't need it right now, so I don't intend to do that in the interest
