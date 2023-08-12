@@ -12,6 +12,8 @@ So this is a tool that lets you put snippets of code on a blank "canvas", move
 them around, jump around etc. while keeping the whole screen in view. The code
 boxes support Scheme syntax.
 
+Try it here - https://sriku.org/demos/codecanvas/ 
+
 ## How to use
 
 1. Click "Save" first. It will reload the page with a query param
