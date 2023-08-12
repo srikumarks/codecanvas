@@ -18,8 +18,9 @@ How to use
 
 1. Click "Save" first. It will reload the page with a query param
    ``?file=start``. The page's ``file`` query parameter is used to save your
-   canvas. If you already loaded a page with a filename, you don't need to click
-   "Save".
+   canvas. If you already loaded a page with a filename, you don't need to
+   click "Save". You'll also see a ``lang`` parameter. You can change that and
+   reload the page to set the language of the code boxes. [#lang]_
 
 2. Cmd-Click anywhere on the canvas to create a code box.
 
@@ -45,4 +46,8 @@ top-down first followed by left-right. While eventually we could integrate a
 parser and sort the boxes by dependency order before exporting, you may
 initially want to place definitions closer to top-left and things that use
 these definitions either below or to the right.
+
+.. [#lang] At some point, it might make sense to have per-box language support,
+   but I don't need it right now, so I don't intend to do that in the interest
+   of keeping things simple.
 
