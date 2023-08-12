@@ -1,9 +1,9 @@
 function Behaviour(add, remove) {
-    return {
-        add: add,
-        remove: remove,
-        set: function () { return this.remove().add(); }
-    };
+    let b = {};
+    b.add = add.bind(b);
+    b.remove = remove.bind(b);
+    b.set = function () { return b.remove().add(); };
+    return b;
 }
 
 function EventResponder(element, eventname, handler) {
@@ -19,12 +19,17 @@ function EventResponder(element, eventname, handler) {
 const elem = (id) => { return document.getElementById(id); };
 const copy = (obj) => { return Object.assign({}, obj); };
 const historyKey = (name) => { return name + '.history'; };
+const languageKey = (name) => { return name + '.lang'; };
 const urlfilename = () => {
-    let p = new URLSearchParams(window.location);
+    let p = new URLSearchParams(window.location.search);
     return p.get("file") || window.location.hash.substring(1);
 };
 const filename = () => { 
     return (elem('filename').value.trim().replaceAll(/\s+/g, '') || urlfilename());
+};
+const language = () => {
+    let p = new URLSearchParams(window.location.search);
+    return p.get("lang") || window.localStorage[languageKey(filename())] || 'scheme';
 };
 
 function init() {
@@ -131,13 +136,14 @@ function init() {
             }
 
             if (!name) {
-                window.location.href = "?file=start";
+                window.location.href = "?file=start&lang=scheme";
                 return;
             }
 
             window.localStorage[name] = JSON.stringify(boxes);
             window.localStorage[historyKey(name)] = JSON.stringify(history);
-            window.location.href = '?file=' + name;
+            window.localStorage[languageKey(name)] = language();
+            window.location.href = `?file=${name}&lang=${language()}`;
         };
     }
 
@@ -347,7 +353,7 @@ function init() {
         let editor = ace.edit(div);
         //editor.setTheme("ace/theme/monokai");
         editor.setTheme("ace/theme/xcode");
-        editor.session.setMode("ace/mode/scheme");
+        editor.session.setMode(`ace/mode/${language()}`);
         editor.renderer.setShowGutter(false);
         editor.setValue(box.content);
         editor.clearSelection();
