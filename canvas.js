@@ -337,7 +337,10 @@ function init() {
             save(filename());
             let boxvals = [...Object.values(boxes)];
             boxvals.sort(function (a, b) {
-                return (a.y + a.dy < b.y + b.dy) && (a.x + a.dx < b.x + b.dx);
+                return a.y + a.dy - b.y + b.dy;
+            });
+            boxvals.sort(function (a, b) {
+                return a.x + a.dx - b.x + b.dx;
             });
             let content = [];
             for (let b of boxvals) {
