@@ -160,6 +160,7 @@ function init() {
         window.localStorage[name] = JSON.stringify(boxes);
         window.localStorage[historyKey(name)] = JSON.stringify(history);
         window.localStorage[languageKey(name)] = language();
+        message(`Saved <b>${name}</b> in language <code>${language()}</code>`);
     }
 
     function loadBoxes(name) {
@@ -326,7 +327,6 @@ function init() {
             if (urlfilename().length === 0) {
                 redirect();
             }
-            message(`Saved <b>${filename()}</b> in language <code>${language()}</code>`);
         });
     }
 
