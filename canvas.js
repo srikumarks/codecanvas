@@ -33,13 +33,15 @@ function message(text) {
     let pop = document.createElement('div');
     pop.innerHTML = text;
     pop.style.position = 'absolute';
-    pop.style.right = "5px";
-    pop.style.bottom = "5px";
-    pop.style['box-shadow'] = '3px 3px 5px';
+    pop.style.right = '8pt';
+    pop.style.bottom = '8pt';
+    pop.style.padding = '4pt 8pt 4pt 8pt';
+    pop.style['border-radius'] = '4pt';
+    pop.style['box-shadow'] = '0px 0px 10px';
     document.body.appendChild(pop);
-    setTimeout(5000, function () {
+    setTimeout(function () {
         document.body.removeChild(pop);
-    });
+    }, 5000);
 }
 
 const fileExtensions = {
@@ -79,8 +81,11 @@ function init() {
 
     elem('filename').value = urlfilename() || 'start';
 
-    function getLatest(boxid) {
-        for (let i = history.length-1; i >= 0; i--) {
+    function getLatest(boxid, rewind = 0) {
+        let endpt = history.length-1;
+        console.assert(rewind >= 0 && rewind < history.length);
+
+        for (let i = endpt - rewind; i >= 0; i--) {
             let block = history[i];
             if (block.type === 'modified') {
                 for (let k = 0; k < block.items.length; k++) {
@@ -184,33 +189,31 @@ function init() {
     }
 
     function MkEnlargeBehaviour(canvas) {
-        let lastBigDiv = null;
+        let lastBigDiv = [];
         let addedToCanvas = 0;
+        function resetSizes() {
+            while (lastBigDiv.length > 0) {
+                let d = lastBigDiv.pop();
+                let b2 = boxes[d.boxid];
+                b2.sx = 1.0;
+                b2.sy = 1.0;
+                setTransform(d, b2);
+            }
+        }
         return function (div) {
             function onclick(event) {
+                resetSizes();
                 let b = boxes[div.boxid];
                 b.sx = 1.5;
                 b.sy = 1.5;
                 setTransform(div, b);
-                if (lastBigDiv && lastBigDiv !== div) {
-                    let b2 = boxes[lastBigDiv.boxid];
-                    b2.sx = 1.0;
-                    b2.sy = 1.0;
-                    setTransform(lastBigDiv, b2);
-                    lastBigDiv = div;
-                }
-                if (!lastBigDiv) {
-                    lastBigDiv = div;
-                }
+                lastBigDiv.push(div);
             }
             function onclickcanvas(event) {
-                if (lastBigDiv) {
-                    let b = boxes[lastBigDiv.boxid];
-                    b.sx = 1.0;
-                    b.sy = 1.0;
-                    setTransform(lastBigDiv, b);
-                    lastBigDiv = null;
-                }
+                resetSizes();
+                // Save every time the canvas background is clicked
+                // as a state that is visible in its entirety.
+                save(filename());
             }
             return Behaviour(function add() {
                 div.addEventListener('click', onclick);
@@ -320,10 +323,10 @@ function init() {
     function SaveBehaviour(div) {
         return EventResponder(div, 'click', function onsave(event) {
             save(filename());
-            if (urlfilename().length > 0) {
+            if (urlfilename().length === 0) {
                 redirect();
             }
-            message(`Saved ${filename()} in language ${language()}`);
+            message(`Saved <b>${filename()}</b> in language <code>${language()}</code>`);
         });
     }
 
