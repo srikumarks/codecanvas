@@ -60,7 +60,7 @@ function telluser(text) {
 const fileExtensions = {
     scheme: '.rkt', haskell: '.hs', c: '.c', cpp: '.cpp', sql: '.sql', 
     javascript: '.js', typescript: '.ts', python: '.py', julia: '.jl',
-    ruby: '.rb'
+    ruby: '.rb', java: '.java',
 };
 const modeForExtension = {};
 Object.keys(fileExtensions).forEach((mode) => {
@@ -129,7 +129,10 @@ function init() {
     }
 
     function zoom(div, b) {
-        div.style.transform = `translate(${b.dx}px,${b.dy}px) scale(${b.sx},${b.sy})`;
+        let tx =  `translate(${b.dx}px,${b.dy}px) scale(${b.sx},${b.sy})`;
+        div.style.transform = tx;
+        div.style.left = `${b.x}px`;
+        div.style.top = `${b.y}px`;
         div.style['transform-origin'] = 'top left';
         return b;
     }
@@ -270,37 +273,47 @@ function init() {
 
     function DragBehaviour(div) {
         let dx = 0, dy = 0;
-        function onmousedown(event) {
+        let pointerId = null;
+        function onpointerdown(event) {
             if (event.metaKey) {
                 dx = boxes[div.boxid].dx;
                 dy = boxes[div.boxid].dy;
-                div.addEventListener('mousemove', onmousemove);
-                div.addEventListener('mouseup', onmouseup);
+                div.addEventListener('pointermove', onpointermove, true);
+                div.addEventListener('pointerup', onpointerup, true);
                 event.stopPropagation();
+                if (div.setPointerCapture) {
+                    pointerId = event.pointerId;
+                    div.setPointerCapture(pointerId);
+                }
+                event.preventDefault();
             }
         }
-        function onmousemove(event) {
+        function onpointermove(event) {
             dx += event.movementX;
             dy += event.movementY;
             let b = div.codeBox();
             b.dx = dx;
             b.dy = dy;
-            later(() => {
-                zoom(div, b);
-            });
+            zoom(div, b);
             event.stopPropagation();
+            event.preventDefault();
         }
-        function onmouseup(event) {
+        function onpointerup(event) {
             be.set();
             event.stopPropagation();
+            if (pointerId && div.releasePointerCapture) {
+                div.releasePointerCapture(pointerId);
+                pointerId = null;
+            }
+            event.preventDefault();
         }
         let be = Behaviour(function add() { 
-            div.addEventListener('mousedown', onmousedown);
+            div.addEventListener('pointerdown', onpointerdown, true);
             return this;
         }, function remove() {
-            div.removeEventListener('mousedown', onmousedown);
-            div.removeEventListener('mousemove', onmousemove);
-            div.removeEventListener('mouseup', onmouseup);
+            div.removeEventListener('pointerdown', onpointerdown, true);
+            div.removeEventListener('pointermove', onpointermove, true);
+            div.removeEventListener('pointerup', onpointerup, true);
             return this;
         });
 
@@ -524,7 +537,6 @@ function init() {
         div.style.height = box.height;
         div.style.padding = "5pt";
         div.style.resize = "both";
-        div.style.draggable = true;
         zoom(div, box);
         div.style['z-index'] = box.id;
         div.click_behaviour = ClickBehaviour(div).add();
