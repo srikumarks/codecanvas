@@ -62,6 +62,10 @@ const fileExtensions = {
     javascript: '.js', typescript: '.ts', python: '.py', julia: '.jl',
     ruby: '.rb'
 };
+const modeForExtension = {};
+Object.keys(fileExtensions).forEach((mode) => {
+    modeForExtension[fileExtensions[mode].substring(1)] = mode;
+});
 const elem = (id) => { return document.getElementById(id); };
 const copy = (obj) => { return Object.assign({}, obj); };
 const historyKey = (name) => { return name + '.history'; };
@@ -80,8 +84,10 @@ const language = () => {
 const filepath = () => {
     return filename() + (fileExtensions[language()] || ".txt");
 };
-const redirect = () => {
-    window.location.href = `?file=${filename()}&lang=${language()}`;
+const redirect = (file,lang) => {
+    file = file || filename();
+    lang = lang || language();
+    window.location.href = `?file=${file}&lang=${lang}`;
 };
 
 function init() {
@@ -132,7 +138,8 @@ function init() {
         requestAnimationFrame(func);
     };
 
-    function save(name) {
+    function save(name, lang=null) {
+        lang = lang || language();
         let historyBlock = [];
         for (let k in boxes) {
             let b = boxes[k];
@@ -150,7 +157,7 @@ function init() {
                         || b.dx !== latest.dx
                         || b.dy !== latest.dy
                     ) {
-                        let b2 = copy(latest||b);
+                        let b2 = copy(b);
                         b2.version++;
                         b2.content = val;
                         b2.width = el.style.width;
@@ -174,15 +181,15 @@ function init() {
         }
 
         if (!name) {
-            window.location.href = "?file=start&lang=scheme";
+            window.location.href = `?file=start&lang=${lang}`;
             return;
         }
 
         window.localStorage[name] = JSON.stringify(boxes);
         window.localStorage[historyKey(name)] = JSON.stringify(history);
-        window.localStorage[languageKey(name)] = language();
+        window.localStorage[languageKey(name)] = lang;
         if (historyBlock.length > 0) {
-            telluser(`Saved <b>${name}</b> in language <code>${language()}</code>`);
+            telluser(`Saved <b>${name}</b> in language <code>${lang}</code>`);
         }
     }
 
@@ -219,19 +226,23 @@ function init() {
             while (lastBigDiv.length > 0) {
                 let d = lastBigDiv.pop();
                 let b2 = boxes[d.boxid];
-                b2.sx = 1.0;
-                b2.sy = 1.0;
-                zoom(d, b2);
+                if (b2) {
+                    b2.sx = 1.0;
+                    b2.sy = 1.0;
+                    zoom(d, b2);
+                }
             }
         }
         return function (div) {
             function onclick(event) {
                 resetSizes();
                 let b = boxes[div.boxid];
-                b.sx = 1.5;
-                b.sy = 1.5;
-                zoom(div, b);
-                lastBigDiv.push(div);
+                if (b) {
+                    b.sx = 1.5;
+                    b.sy = 1.5;
+                    zoom(div, b);
+                    lastBigDiv.push(div);
+                }
             }
             function onclickcanvas(event) {
                 resetSizes();
@@ -271,7 +282,7 @@ function init() {
         function onmousemove(event) {
             dx += event.movementX;
             dy += event.movementY;
-            let b = boxes[div.boxid];
+            let b = div.codeBox();
             b.dx = dx;
             b.dy = dy;
             later(() => {
@@ -395,17 +406,51 @@ function init() {
             let files = [...event.dataTransfer.files];
             if (files.length > 0) {
                 let file = files[0];
-                let fr = new FileReader();
-                fr.addEventListener('load', function () {
-                    let json = JSON.parse(fr.result);
-                    window.localStorage[json.filename] = JSON.stringify(json.boxes);
-                    window.localStorage[json.filename + ".history"] = JSON.stringify(json.history);
-                    window.localStorage[json.filename + ".lang"] = json.lang;
-                    elem('filename').value = json.filename;
-                    redirect();
-                });
-                fr.readAsText(file);
-                            }
+                let parts = file.name.split(".");
+                let ext = parts[parts.length-1];
+                let filename = file.name.replaceAll('.', '_');
+                if (ext.toLowerCase() === 'json') {
+                    let fr = new FileReader();
+                    fr.addEventListener('load', function () {
+                        let json = JSON.parse(fr.result);
+                        window.localStorage[json.filename] = JSON.stringify(json.boxes);
+                        window.localStorage[json.filename + ".history"] = JSON.stringify(json.history);
+                        window.localStorage[json.filename + ".lang"] = json.lang;
+                        elem('filename').value = json.filename;
+                        redirect();
+                    });
+                    fr.readAsText(file);
+                } else {
+                    let mode = modeForExtension[ext];
+                    if (mode) {
+                        let fr = new FileReader();
+                        fr.addEventListener('load', function () {
+                            let text = fr.result;
+                            let boxid = id++;
+
+                            createBox({
+                                version: 1,
+                                id: boxid,
+                                elementId: 'tb' + boxid,
+                                x: event.clientX,
+                                y: event.clientY,
+                                dx: 0,
+                                dy: 0,
+                                sx: 1.0,
+                                sy: 1.0,
+                                width: `${maxLineLength(text)}ex`,
+                                height: `${Math.min(40, countLines(text))}em`,
+                                content: text
+                            });
+                            save(filename, mode);
+                            redirect(filename, mode);
+                        });
+                        fr.readAsText(file);
+                    } else {
+                        alert("Don't know what to do with file " + file.name);
+                    }
+                }
+            }
         }
         function ondragover(event) {
             event.preventDefault();
@@ -423,6 +468,12 @@ function init() {
 
     function countLines(text) {
         return text.split("\n").length;
+    }
+
+    function maxLineLength(text) {
+        let lines = text.split("\n");
+        let lengths = lines.map((l) => l.length);
+        return Math.max.apply(null, lengths);
     }
 
     // Pressing Cmd-B will take the currently selected text and
@@ -463,7 +514,7 @@ function init() {
         let div = document.createElement('div');
         let elementId = 'tb' + box.id;
         div.boxid = box.id;
-        div.codeBox = box;
+        div.codeBox = () => boxes[box.id];
         div.setAttribute('class', 'textbox');
         div.setAttribute('id', elementId);
         div.style.position = "absolute";

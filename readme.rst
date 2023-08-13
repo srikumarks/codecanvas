@@ -31,6 +31,11 @@ How to use
 6. You can select some text within a box and press "Cmd-B" to make a new
    box with that selection.
 
+7. You can load a source code file onto the canvas by dragging and dropping
+   the file on it. Supports a few programming languages commonly used in 
+   teaching. The mode of the canvas will change to reflect the language the
+   file is in, as identified by its extension.
+
 7. Any time you want to save what you have, click the "Save" button at the top
    right corner. The canvas will be saved in your ``localStorage``.
 
