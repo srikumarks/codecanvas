@@ -384,10 +384,12 @@ function init() {
             save(filename());
             let boxvals = [...Object.values(boxes)];
             boxvals.sort(function (a, b) {
-                return a.y + a.dy - b.y + b.dy;
-            });
-            boxvals.sort(function (a, b) {
-                return a.x + a.dx - b.x + b.dx;
+                let diff = Math.round((a.x + a.dx - b.x - b.dx)/144);
+                if (diff === 0) {
+                    return Math.round((a.y + a.dy - b.y - b.dy)/90);
+                } else {
+                    return diff;
+                }
             });
             let content = [];
             for (let b of boxvals) {
