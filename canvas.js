@@ -1,3 +1,16 @@
+function override(object, prop, replacer) { 
+    var old = object[prop]; object[prop] = replacer(old)  
+}
+
+const unitZoom = {sx: 1.0, sy: 1.0, dx: 0.0, dy: 0.0};
+function getZoom(boxes, element) {
+    if (!element || !element.boxid) { return unitZoom; }
+    let b = boxes[element.boxid];
+    if (!b) { return unitZoom; }
+    return {sx: b.sx, sy: b.sy, dx: b.x + b.dx, dy: b.y + b.dy};
+}
+
+
 function Behaviour(add, remove) {
     let b = {};
     b.add = add.bind(b);
@@ -106,7 +119,7 @@ function init() {
     }
 
 
-    function setTransform(div, b) {
+    function zoom(div, b) {
         div.style.transform = `translate(${b.dx}px,${b.dy}px) scale(${b.sx},${b.sy})`;
         div.style['transform-origin'] = 'top left';
         return b;
@@ -204,7 +217,7 @@ function init() {
                 let b2 = boxes[d.boxid];
                 b2.sx = 1.0;
                 b2.sy = 1.0;
-                setTransform(d, b2);
+                zoom(d, b2);
             }
         }
         return function (div) {
@@ -213,7 +226,7 @@ function init() {
                 let b = boxes[div.boxid];
                 b.sx = 1.5;
                 b.sy = 1.5;
-                setTransform(div, b);
+                zoom(div, b);
                 lastBigDiv.push(div);
             }
             function onclickcanvas(event) {
@@ -258,7 +271,7 @@ function init() {
             b.dx = dx;
             b.dy = dy;
             later(() => {
-                setTransform(div, b);
+                zoom(div, b);
             });
             event.stopPropagation();
         }
@@ -410,6 +423,7 @@ function init() {
         let sx = box.sx, sy = box.sy;
         let div = document.createElement('div');
         div.boxid = box.id;
+        div.codeBox = box;
         div.setAttribute('class', 'textbox');
         div.setAttribute('id', box.elementId);
         div.style.position = "absolute";
@@ -420,7 +434,7 @@ function init() {
         div.style.padding = "5pt";
         div.style.resize = "both";
         div.style.draggable = true;
-        setTransform(div, box);
+        zoom(div, box);
         div.style['z-index'] = box.id;
         div.click_behaviour = ClickBehaviour(div).add();
         div.drag_behaviour = DragBehaviour(div).add();
@@ -448,6 +462,27 @@ function init() {
         editor.setValue(box.content);
         editor.clearSelection();
         div.editor = editor;
+
+        // Ace editor has a problem with boxes that have a css transform
+        // setting on them. It doesn't manage to correctly compute the
+        // text landing position. The fix below works in this context
+        // where we only have translation and scale. In general we might
+        // want to do a matrix transform application of the form M^{-1}XM
+        //
+        // Thanks to the suggestion here - 
+        // https://github.com/ajaxorg/ace/issues/2475#issuecomment-364266978
+        override(editor.renderer, "screenToTextCoordinates", function(old) {
+            return function(x, y) {
+                var zoom = getZoom(boxes, this.container);
+                if (this.container.boxid) {
+                    let b = boxes[this.container.boxid];
+                    x = (x - zoom.dx) / zoom.sx + zoom.dx;
+                    y = (y - zoom.dy) / zoom.sy + zoom.dy;
+                } 
+                return old.call(this, x, y);
+            }
+        })
+
         later(() => {
             div.click();
             editor.focus();
