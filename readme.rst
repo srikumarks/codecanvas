@@ -28,7 +28,10 @@ How to use
    visible, in case you're projecting the canvas on a smaller screen. Click on
    the canvas background to reset the box size to normal.
 
-6. Any time you want to save what you have, click the "Save" button at the top
+6. You can select some text within a box and press "Cmd-B" to make a new
+   box with that selection.
+
+7. Any time you want to save what you have, click the "Save" button at the top
    right corner. The canvas will be saved in your ``localStorage``.
 
 Notes
