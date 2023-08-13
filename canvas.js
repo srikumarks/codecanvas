@@ -42,7 +42,7 @@ function download(data, type, name) {
     URL.revokeObjectURL(url);
 }
 
-function message(text) {
+function telluser(text) {
     let pop = document.createElement('div');
     pop.innerHTML = text;
     pop.style.position = 'absolute';
@@ -115,9 +115,12 @@ function init() {
                 }
             }
         }
-        return boxes[boxid];
+        return null;
     }
 
+    function getCurrent(boxid) {
+        return getLatest(boxid) || boxes[boxid];
+    }
 
     function zoom(div, b) {
         div.style.transform = `translate(${b.dx}px,${b.dy}px) scale(${b.sx},${b.sy})`;
@@ -138,7 +141,8 @@ function init() {
                 if (el) {
                     let latest = getLatest(b.id);
                     let val = el.editor.getValue();
-                    if (val !== latest.content
+                    if (!latest
+                        || val !== latest.content
                         || b.width !== latest.width
                         || b.height !== latest.height
                         || b.x !== latest.x
@@ -146,12 +150,11 @@ function init() {
                         || b.dx !== latest.dx
                         || b.dy !== latest.dy
                     ) {
-                        let b2 = copy(latest);
+                        let b2 = copy(latest||b);
                         b2.version++;
                         b2.content = val;
                         b2.width = el.style.width;
                         b2.height = el.style.height;
-                        historyBlock.push(b2);
                         b.version = b2.version;
                         b.content = val;
                         b.width = b2.width;
@@ -160,6 +163,7 @@ function init() {
                         b.y = b2.y;
                         b.dx = b2.dx;
                         b.dy = b2.dy;
+                        historyBlock.push(b2);
                     }
                 }
             }
@@ -178,7 +182,7 @@ function init() {
         window.localStorage[historyKey(name)] = JSON.stringify(history);
         window.localStorage[languageKey(name)] = language();
         if (historyBlock.length > 0) {
-            message(`Saved <b>${name}</b> in language <code>${language()}</code>`);
+            telluser(`Saved <b>${name}</b> in language <code>${language()}</code>`);
         }
     }
 
@@ -417,15 +421,51 @@ function init() {
         });
     }
 
+    function countLines(text) {
+        return text.split("\n").length;
+    }
+
+    // Pressing Cmd-B will take the currently selected text and
+    // make a new box with it.
+    function ExtractCodeBehaviour(div) {
+        const cmdname = "extractSelectionIntoBox";
+        return Behaviour(function add() {
+            div.editor.commands.addCommand({
+                name: cmdname,
+                bindKey: {win: "Ctrl-B", mac: "Command-B"},
+                exec: function (editor) {
+                    let origbox = getCurrent(div.boxid);
+                    let box = copy(origbox);
+                    box.id = id++;
+                    // New box is shifted to right of current box.
+                    box.x += 150;
+                    box.sx = 1.0;
+                    box.sy = 1.0;
+                    let sel = editor.getSelectedText();
+                    // New box has enough height to hold the selected text,
+                    // but has same width as the current box.
+                    box.height = `${countLines(sel)}em`;
+                    box.content = editor.getSelectedText();
+                    createBox(box);
+                }
+            });
+            return this;
+        }, function remove() {
+            div.editor.commands.removeCommand(cmdname);
+            return this;
+        });
+    }
+
     function createBox(box) {
         let x = box.x, y = box.y;
         let dx = box.dx, dy = box.dy;
         let sx = box.sx, sy = box.sy;
         let div = document.createElement('div');
+        let elementId = 'tb' + box.id;
         div.boxid = box.id;
         div.codeBox = box;
         div.setAttribute('class', 'textbox');
-        div.setAttribute('id', box.elementId);
+        div.setAttribute('id', elementId);
         div.style.position = "absolute";
         div.style.left = `${x}px`;
         div.style.top = `${y}px`;
@@ -442,7 +482,7 @@ function init() {
         boxes[box.id] = {
             version: box.version,
             id: box.id,
-            elementId: box.elementId,
+            elementId: elementId,
             x: box.x,
             y: box.y,
             dx: box.dx,
@@ -462,6 +502,7 @@ function init() {
         editor.setValue(box.content);
         editor.clearSelection();
         div.editor = editor;
+        div.extractcode_behaviour = ExtractCodeBehaviour(div).add();
 
         // Ace editor has a problem with boxes that have a css transform
         // setting on them. It doesn't manage to correctly compute the
