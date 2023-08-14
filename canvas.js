@@ -278,6 +278,7 @@ function init() {
             if (event.metaKey) {
                 dx = boxes[div.boxid].dx;
                 dy = boxes[div.boxid].dy;
+                div.style['z-index'] = 10000; 
                 div.addEventListener('pointermove', onpointermove, true);
                 div.addEventListener('pointerup', onpointerup, true);
                 event.stopPropagation();
@@ -539,6 +540,8 @@ function init() {
         div.style.height = box.height;
         div.style.padding = "5pt";
         div.style.resize = "both";
+        div.style['border-radius'] = '3px 3px 0px 0px';
+        div.style['box-shadow'] = '2px 2px 5px 1px rgba(0,0,0,0.2)';
         zoom(div, box);
         div.style['z-index'] = box.id;
         div.click_behaviour = ClickBehaviour(div).add();
