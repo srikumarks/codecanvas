@@ -28,8 +28,9 @@ How to use
    visible, in case you're projecting the canvas on a smaller screen. Click on
    the canvas background to reset the box size to normal.
 
-6. You can select some text within a box and press "Cmd-B" to make a new
-   box with that selection.
+6. You can select some text within a box and press "Cmd-B" or "Ctrl-B" to make
+   a new box with that selection. In Firefox, Cmd-B is bound to showing the bookmarks
+   tab. So you can use "Ctrl-B" in FF.
 
 7. You can load a source code file onto the canvas by dragging and dropping
    the file on it. Supports a few programming languages commonly used in 

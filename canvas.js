@@ -492,29 +492,45 @@ function init() {
         return Math.max.apply(null, lengths);
     }
 
+    function rangeData(range) {
+        return {
+            from: { row: range.start.row, column: range.start.column },
+            to: {row: range.end.row, column: range.end.column } 
+        };
+    }
+
     // Pressing Cmd-B will take the currently selected text and
     // make a new box with it.
     function ExtractCodeBehaviour(div) {
         const cmdname = "extractSelectionIntoBox";
+        function extractCode(editor) {
+            let sel = editor.getSelectedText().trim();
+            if (sel.length > 0) {
+                let selRange = editor.selection.getRange();
+                let origbox = getCurrent(div.boxid);
+                let box = copy(origbox);
+                box.id = id++;
+                // New box is shifted to right of current box.
+                box.x += 150;
+                box.sx = 1.0;
+                box.sy = 1.0;
+                // New box has enough height to hold the selected text,
+                // but has same width as the current box.
+                box.height = `${countLines(sel)}em`;
+                box.content = sel;
+                box.origin = Object.freeze({
+                    boxid: origbox.id,
+                    range: rangeData(selRange)
+                });
+                createBox(box);
+            }
+        }
+
         return Behaviour(function add() {
             div.editor.commands.addCommand({
                 name: cmdname,
-                bindKey: {win: "Ctrl-B", mac: "Command-B"},
-                exec: function (editor) {
-                    let origbox = getCurrent(div.boxid);
-                    let box = copy(origbox);
-                    box.id = id++;
-                    // New box is shifted to right of current box.
-                    box.x += 150;
-                    box.sx = 1.0;
-                    box.sy = 1.0;
-                    let sel = editor.getSelectedText();
-                    // New box has enough height to hold the selected text,
-                    // but has same width as the current box.
-                    box.height = `${countLines(sel)}em`;
-                    box.content = editor.getSelectedText();
-                    createBox(box);
-                }
+                bindKey: {win: "Ctrl-B", mac: "Command-B|Ctrl-B"},
+                exec: extractCode
             });
             return this;
         }, function remove() {
@@ -559,7 +575,8 @@ function init() {
             sy: box.sy,
             width: box.width,
             height: box.height,
-            content: box.content
+            content: box.content,
+            origin: box.origin || null
         };
         canvas.appendChild(div);
         let editor = ace.edit(div);
